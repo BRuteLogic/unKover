@@ -9,8 +9,9 @@
 # CONFIG
 # ---------------------------------------------------------------------------
 
-TOOL="unkover v1.0 by Brute Logic - https://brutelogic.net"
+TOOL="unkover v1.2 by Brute Logic - https://brutelogic.net"
 JSON_MODE=false
+QUIET_MODE=false
 CONNECT_TIMEOUT=3
 MAX_TIME=5
 
@@ -20,6 +21,7 @@ PREFIX=""
 for arg in "$@"; do
     case "$arg" in
         -j|--json) JSON_MODE=true ;;
+	-q|--quiet) QUIET_MODE=true ;;
         --prefix) PREFIX_NEXT=1 ;;
         *) [[ "$PREFIX_NEXT" == "1" ]] && PREFIX="$arg" && PREFIX_NEXT=0 || URL="$arg" ;;
     esac
@@ -169,7 +171,7 @@ print_result() {
     if [[ "$DONE" -eq 1 ]]; then
         printf "${GREEN}BYPASS FOUND${NC}\n"
         echo "Technique: $(echo "$FINDINGS" | grep -oP '(?<="technique":")[^"]*')"
-        printf "${YELLOW}PoC: $FIRST_POC${NC}\n"
+	printf "%bPoC: %s%b\n" "$YELLOW" "$FIRST_POC" "$NC"
         echo "Result: $(echo "$FINDINGS" | grep -oP '(?<="status":)[0-9]+') ($(echo "$FINDINGS" | grep -oP '(?<="size":)[0-9]+') bytes)"
     else
         printf "${RED}No bypass found.${NC}\n"
@@ -255,7 +257,7 @@ run_test() {
     local func="$2"
     shift 2
     [[ $DONE -eq 1 ]] && return
-    $JSON_MODE || printf "\rTesting %-25s" "${name}..."
+    $JSON_MODE || $QUIET_MODE || printf "\rTesting %-25s" "${name}..."
     "$func" "$@"
 }
 
@@ -592,8 +594,11 @@ main() {
     local baseline_size; baseline_size=$(size_of "$baseline")
 
     if [[ "$baseline_status" != "403" ]]; then
-        printf '{"error":"target returned %s, expected 403","target":"%s"}\n' \
-            "$baseline_status" "$(json_str "$URL")"
+        if $JSON_MODE; then
+            printf '{"error":"target returned %s, expected 403"}\n' "$baseline_status"
+        else
+            printf 'Target returned %s, expected 403.\n' "$baseline_status"
+        fi
         exit 1
     fi
 

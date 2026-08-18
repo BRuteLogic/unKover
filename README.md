@@ -27,7 +27,7 @@ Bash and curl are already on every Linux system. The script is short, readable, 
 ## Usage
 
 ```bash
-bash unkover <URL> [-j|--json] [--prefix /v2]
+bash unkover <URL> [--prefix /v2] [-j|--json]
 ```
 
 ### Arguments
