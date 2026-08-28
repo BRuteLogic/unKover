@@ -348,6 +348,7 @@ test_method_tampering() {
         local res; res=$(req "$url" -X "$method")
         local s; s=$(status_of "$res")
         local z; z=$(size_of "$res")
+        [[ "$method" != "HEAD" && "$z" -eq 0 ]] && continue
         if is_bypass "$s"; then
             local req_json; req_json=$(printf '{"method":"%s"}' "$method")
             local poc="curl -i -X '${method}' '$(json_str "$url")'"
