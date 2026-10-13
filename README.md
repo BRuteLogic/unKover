@@ -10,7 +10,7 @@ Part of the **King of Noobs** suite — offensive recon tools built on KISS and 
 
 ## What It Does
 
-unKover tests a URL returning 403 Forbidden against a set of proven bypass techniques and stops at the first successful one, returning a ready-to-run curl PoC.
+unKover tests a URL returning 403 Forbidden (or 401 Unauthorized) against a set of proven bypass techniques and stops at the first successful one, returning a ready-to-run curl PoC.
 
 Techniques include IP header spoofing, method tampering, protocol headers, path normalization, URL encoding, HTTP/1.0 downgrade, hop-by-hop headers, path suffix injection, and API version prefix bypass.
 
