@@ -12,7 +12,7 @@ Part of the **King of Noobs** suite — offensive recon tools built on KISS and 
 
 unKover tests a URL returning 403 Forbidden (or 401 Unauthorized) against a set of proven bypass techniques and stops at the first successful one, returning a ready-to-run curl PoC.
 
-Techniques include IP header spoofing, method tampering, protocol headers, path normalization, URL encoding, HTTP/1.0 downgrade, hop-by-hop headers, path suffix injection, and API version prefix bypass.
+Techniques include IP header spoofing, RFC 7239 Forwarded header spoofing, method tampering, protocol headers, path normalization, URL encoding, HTTP/1.0 downgrade, hop-by-hop headers, path suffix injection, and API version prefix bypass.
 
 ---
 
@@ -32,7 +32,7 @@ bash unkover <URL> [--prefix /v2] [-j|--json]
 
 ### Arguments
 
-- `URL` — Target URL returning 403 (required)
+- `URL` — Target URL returning 403 or 401 (required)
 - `--prefix` — Additional path prefix to test (optional). Some servers protect `/admin` but not `/v2/admin` or `/api/admin`. Provide whatever prefix is relevant to the target.
 - `-j|--json` — Output results in JSON format
 
